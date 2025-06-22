@@ -4,8 +4,9 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/spf13/cobra"
 	"nwcli/pkg/news"
+
+	"github.com/spf13/cobra"
 )
 
 var searchCmd = &cobra.Command{
@@ -45,7 +46,7 @@ Examples:
 
 		// Create news service with options
 		newsService := news.NewNewsServiceWithOptions(country, fullContent)
-		
+
 		// Search articles
 		articles, err := newsService.SearchArticles(query, limit)
 		if err != nil {
@@ -78,7 +79,7 @@ Examples:
 			if fullContent {
 				title += " - Full Articles"
 			}
-			return renderMarkdown(articles, title)
+			return renderMarkdownWithPager(articles, title, noPager)
 		}
 	},
 }
@@ -91,4 +92,5 @@ func init() {
 	searchCmd.Flags().StringP("source", "s", "", "filter results by source")
 	searchCmd.Flags().StringP("country", "", "nl", "country code (nl, us, uk, de, fr)")
 	searchCmd.Flags().BoolP("full", "", false, "search in full article content instead of summaries")
+	searchCmd.Flags().BoolP("no-pager", "", false, "disable interactive pager and output to stdout")
 }

@@ -5,23 +5,24 @@ import (
 	"strings"
 	"time"
 
+	"nwcli/pkg/news"
+
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/glamour"
 	"github.com/charmbracelet/lipgloss"
-	"nwcli/pkg/news"
 )
 
 // Model represents the TUI application state
 type Model struct {
-	articles        []news.Article
-	currentView     ViewType
-	selectedIndex   int
-	title           string
-	renderer        *glamour.TermRenderer
-	viewport        Viewport
-	showHelp        bool
-	windowWidth     int
-	windowHeight    int
+	articles      []news.Article
+	currentView   ViewType
+	selectedIndex int
+	title         string
+	renderer      *glamour.TermRenderer
+	viewport      Viewport
+	showHelp      bool
+	windowWidth   int
+	windowHeight  int
 }
 
 // ViewType represents the current view

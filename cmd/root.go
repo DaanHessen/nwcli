@@ -28,7 +28,7 @@ func Execute() error {
 
 func init() {
 	cobra.OnInitialize()
-	
+
 	// Global flags
 	rootCmd.PersistentFlags().BoolP("verbose", "v", false, "verbose output")
 	rootCmd.PersistentFlags().StringP("format", "f", "markdown", "output format (markdown, json, plain)")

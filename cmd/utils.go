@@ -51,7 +51,7 @@ func renderPlain(articles []news.Article) error {
 		if i > 0 {
 			fmt.Println("\n" + strings.Repeat("-", 50))
 		}
-		
+
 		fmt.Printf("Title: %s\n", article.Title)
 		fmt.Printf("Source: %s\n", article.Source)
 		fmt.Printf("Published: %s\n", article.Published.Format("2006-01-02 15:04"))

@@ -4,8 +4,9 @@ import (
 	"fmt"
 	"os"
 
-	tea "github.com/charmbracelet/bubbletea"
 	"nwcli/pkg/news"
+
+	tea "github.com/charmbracelet/bubbletea"
 )
 
 // LaunchTUI starts the interactive TUI for browsing articles

@@ -3,9 +3,10 @@ package cmd
 import (
 	"fmt"
 
-	"github.com/spf13/cobra"
 	"nwcli/pkg/news"
 	"nwcli/pkg/renderer"
+
+	"github.com/spf13/cobra"
 )
 
 var cacheCmd = &cobra.Command{
@@ -82,24 +83,24 @@ func renderCacheStatsPlain(articles []news.Article, cache *news.ArticleCache) er
 	fmt.Println("Cache Statistics")
 	fmt.Println("================")
 	fmt.Printf("Total articles: %d\n", len(articles))
-	
+
 	if cache.IsStale() {
 		fmt.Println("Status: Stale (older than 1 hour)")
 	} else {
 		fmt.Println("Status: Fresh")
 	}
-	
+
 	// Count by source
 	sourceCount := make(map[string]int)
 	for _, article := range articles {
 		sourceCount[article.Source]++
 	}
-	
+
 	fmt.Println("\nArticles by source:")
 	for source, count := range sourceCount {
 		fmt.Printf("  %s: %d\n", source, count)
 	}
-	
+
 	return nil
 }
 

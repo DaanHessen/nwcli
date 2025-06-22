@@ -30,20 +30,20 @@ type Source struct {
 
 // NewsService handles news operations
 type NewsService struct {
-	sources   []Source
-	fetcher   *RSSFetcher
-	cache     *ArticleCache
-	country   string
+	sources     []Source
+	fetcher     *RSSFetcher
+	cache       *ArticleCache
+	country     string
 	fullContent bool
 }
 
 // NewNewsService creates a new news service
 func NewNewsService() *NewsService {
 	return &NewsService{
-		sources: getSourcesByCountry("nl"), // Default to Dutch
-		fetcher: NewRSSFetcher(),
-		cache:   NewArticleCache(),
-		country: "nl",
+		sources:     getSourcesByCountry("nl"), // Default to Dutch
+		fetcher:     NewRSSFetcher(),
+		cache:       NewArticleCache(),
+		country:     "nl",
 		fullContent: false,
 	}
 }
@@ -51,10 +51,10 @@ func NewNewsService() *NewsService {
 // NewNewsServiceWithOptions creates a news service with specific options
 func NewNewsServiceWithOptions(country string, fullContent bool) *NewsService {
 	return &NewsService{
-		sources: getSourcesByCountry(country),
-		fetcher: NewRSSFetcher(),
-		cache:   NewArticleCache(),
-		country: country,
+		sources:     getSourcesByCountry(country),
+		fetcher:     NewRSSFetcher(),
+		cache:       NewArticleCache(),
+		country:     country,
 		fullContent: fullContent,
 	}
 }
@@ -62,7 +62,7 @@ func NewNewsServiceWithOptions(country string, fullContent bool) *NewsService {
 // GetLatestNews fetches latest news from all sources
 func (ns *NewsService) GetLatestNews(limit int) ([]Article, error) {
 	var allArticles []Article
-	
+
 	for _, source := range ns.sources {
 		articles, err := ns.fetcher.FetchFromSource(source, ns.fullContent)
 		if err != nil {
@@ -71,20 +71,20 @@ func (ns *NewsService) GetLatestNews(limit int) ([]Article, error) {
 		}
 		allArticles = append(allArticles, articles...)
 	}
-	
+
 	// Sort by published date (newest first)
 	sort.Slice(allArticles, func(i, j int) bool {
 		return allArticles[i].Published.After(allArticles[j].Published)
 	})
-	
+
 	// Apply limit
 	if limit > 0 && len(allArticles) > limit {
 		allArticles = allArticles[:limit]
 	}
-	
+
 	// Cache articles
 	ns.cache.StoreArticles(allArticles)
-	
+
 	return allArticles, nil
 }
 
@@ -95,29 +95,29 @@ func (ns *NewsService) SearchArticles(query string, limit int) ([]Article, error
 	if len(cached) > 0 {
 		return cached, nil
 	}
-	
+
 	// Fetch fresh articles and search
 	articles, err := ns.GetLatestNews(0) // Get all
 	if err != nil {
 		return nil, err
 	}
-	
+
 	var matches []Article
 	query = strings.ToLower(query)
-	
+
 	for _, article := range articles {
 		if strings.Contains(strings.ToLower(article.Title), query) ||
-		   strings.Contains(strings.ToLower(article.Description), query) ||
-		   strings.Contains(strings.ToLower(article.Content), query) {
+			strings.Contains(strings.ToLower(article.Description), query) ||
+			strings.Contains(strings.ToLower(article.Content), query) {
 			matches = append(matches, article)
 		}
 	}
-	
+
 	// Apply limit
 	if limit > 0 && len(matches) > limit {
 		matches = matches[:limit]
 	}
-	
+
 	return matches, nil
 }
 
@@ -127,20 +127,20 @@ func (ns *NewsService) FilterArticles(sourceName, category string, since time.Ti
 	if err != nil {
 		return nil, err
 	}
-	
+
 	var filtered []Article
-	
+
 	for _, article := range articles {
 		// Filter by source
 		if sourceName != "" && !strings.EqualFold(article.Source, sourceName) {
 			continue
 		}
-		
+
 		// Filter by time
 		if !since.IsZero() && article.Published.Before(since) {
 			continue
 		}
-		
+
 		// Filter by category
 		if category != "" {
 			found := false
@@ -154,15 +154,15 @@ func (ns *NewsService) FilterArticles(sourceName, category string, since time.Ti
 				continue
 			}
 		}
-		
+
 		filtered = append(filtered, article)
 	}
-	
+
 	// Apply limit
 	if limit > 0 && len(filtered) > limit {
 		filtered = filtered[:limit]
 	}
-	
+
 	return filtered, nil
 }
 
@@ -209,7 +209,7 @@ func getDutchSources() []Source {
 			Name:        "NU.nl",
 			URL:         "https://www.nu.nl/rss/Algemeen",
 			Description: "NU.nl - General News",
-			Language:    "nl", 
+			Language:    "nl",
 			Category:    "general",
 		},
 		{
@@ -243,7 +243,7 @@ func getDutchSources() []Source {
 		{
 			Name:        "NU.nl Tech",
 			URL:         "https://www.nu.nl/rss/Tech",
-			Description: "NU.nl - Technology News", 
+			Description: "NU.nl - Technology News",
 			Language:    "nl",
 			Category:    "technology",
 		},

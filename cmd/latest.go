@@ -5,8 +5,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/spf13/cobra"
 	"nwcli/pkg/news"
+
+	"github.com/spf13/cobra"
 )
 
 var latestCmd = &cobra.Command{
@@ -43,10 +44,10 @@ source information, and timestamps.`,
 
 		// Create news service with options
 		newsService := news.NewNewsServiceWithOptions(country, fullContent)
-		
+
 		var articles []news.Article
 		var err error
-		
+
 		if source != "" || category != "" {
 			// Use filtering if source or category specified
 			articles, err = newsService.FilterArticles(source, category, time.Time{}, limit)
@@ -54,7 +55,7 @@ source information, and timestamps.`,
 			// Get latest news
 			articles, err = newsService.GetLatestNews(limit)
 		}
-		
+
 		if err != nil {
 			return fmt.Errorf("failed to fetch news: %w", err)
 		}

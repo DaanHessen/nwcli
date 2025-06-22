@@ -21,10 +21,10 @@ func NewRSSFetcher() *RSSFetcher {
 	client := &http.Client{
 		Timeout: 30 * time.Second,
 	}
-	
+
 	parser := gofeed.NewParser()
 	parser.Client = client
-	
+
 	return &RSSFetcher{
 		parser: parser,
 		client: client,
@@ -42,7 +42,7 @@ func (rf *RSSFetcher) FetchFromSource(source Source, fullContent bool) ([]Articl
 	}
 
 	var articles []Article
-	
+
 	for _, item := range feed.Items {
 		article := Article{
 			Title:       item.Title,
@@ -52,7 +52,7 @@ func (rf *RSSFetcher) FetchFromSource(source Source, fullContent bool) ([]Articl
 			Source:      source.Name,
 			Categories:  item.Categories,
 		}
-		
+
 		// Parse published date
 		if item.PublishedParsed != nil {
 			article.Published = *item.PublishedParsed
@@ -61,7 +61,7 @@ func (rf *RSSFetcher) FetchFromSource(source Source, fullContent bool) ([]Articl
 		} else {
 			article.Published = time.Now()
 		}
-		
+
 		// Extract image URL
 		if item.Image != nil && item.Image.URL != "" {
 			article.ImageURL = item.Image.URL
@@ -69,13 +69,13 @@ func (rf *RSSFetcher) FetchFromSource(source Source, fullContent bool) ([]Articl
 			// Try to find image in extensions
 			article.ImageURL = extractImageFromExtensions(item)
 		}
-		
+
 		// Clean up description
 		article.Description = cleanDescription(article.Description)
-		
+
 		articles = append(articles, article)
 	}
-	
+
 	return articles, nil
 }
 
@@ -87,7 +87,7 @@ func extractContent(item *gofeed.Item, fullContent bool) string {
 		if item.Content != "" {
 			return cleanHTML(item.Content)
 		}
-		
+
 		// For full content, also include extensions that might have more text
 		if item.Extensions != nil {
 			if contentEncoded, ok := item.Extensions["content"]; ok {
@@ -99,7 +99,7 @@ func extractContent(item *gofeed.Item, fullContent bool) string {
 			}
 		}
 	}
-	
+
 	// Default to description for summaries or fallback
 	if item.Description != "" {
 		content := cleanHTML(item.Description)
@@ -109,7 +109,7 @@ func extractContent(item *gofeed.Item, fullContent bool) string {
 		}
 		return content
 	}
-	
+
 	// Fallback to content if description is empty
 	if item.Content != "" {
 		content := cleanHTML(item.Content)
@@ -118,7 +118,7 @@ func extractContent(item *gofeed.Item, fullContent bool) string {
 		}
 		return content
 	}
-	
+
 	return ""
 }
 
@@ -139,7 +139,7 @@ func extractImageFromExtensions(item *gofeed.Item) string {
 			}
 		}
 	}
-	
+
 	// Try to extract from enclosures
 	if len(item.Enclosures) > 0 {
 		for _, enc := range item.Enclosures {
@@ -148,7 +148,7 @@ func extractImageFromExtensions(item *gofeed.Item) string {
 			}
 		}
 	}
-	
+
 	return ""
 }
 
@@ -156,12 +156,12 @@ func extractImageFromExtensions(item *gofeed.Item) string {
 func cleanDescription(desc string) string {
 	// Remove HTML tags
 	cleaned := cleanHTML(desc)
-	
+
 	// Limit length
 	if len(cleaned) > 300 {
 		cleaned = cleaned[:297] + "..."
 	}
-	
+
 	return strings.TrimSpace(cleaned)
 }
 
@@ -169,7 +169,7 @@ func cleanDescription(desc string) string {
 func cleanHTML(html string) string {
 	// Simple HTML tag removal
 	result := html
-	
+
 	// Remove script and style tags with content
 	for {
 		start := strings.Index(result, "<script")
@@ -182,7 +182,7 @@ func cleanHTML(html string) string {
 		}
 		result = result[:start] + result[start+end+9:]
 	}
-	
+
 	for {
 		start := strings.Index(result, "<style")
 		if start == -1 {
@@ -194,7 +194,7 @@ func cleanHTML(html string) string {
 		}
 		result = result[:start] + result[start+end+8:]
 	}
-	
+
 	// Remove all other HTML tags
 	for {
 		start := strings.Index(result, "<")
@@ -207,7 +207,7 @@ func cleanHTML(html string) string {
 		}
 		result = result[:start] + result[start+end+1:]
 	}
-	
+
 	// Decode common HTML entities
 	result = strings.ReplaceAll(result, "&amp;", "&")
 	result = strings.ReplaceAll(result, "&lt;", "<")
@@ -215,7 +215,7 @@ func cleanHTML(html string) string {
 	result = strings.ReplaceAll(result, "&quot;", "\"")
 	result = strings.ReplaceAll(result, "&#39;", "'")
 	result = strings.ReplaceAll(result, "&nbsp;", " ")
-	
+
 	// Clean up whitespace
 	lines := strings.Split(result, "\n")
 	var cleanLines []string
@@ -225,6 +225,6 @@ func cleanHTML(html string) string {
 			cleanLines = append(cleanLines, line)
 		}
 	}
-	
+
 	return strings.Join(cleanLines, "\n")
 }

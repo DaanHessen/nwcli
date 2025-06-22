@@ -5,8 +5,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/charmbracelet/glamour"
 	"nwcli/pkg/news"
+
+	"github.com/charmbracelet/glamour"
 )
 
 // MarkdownRenderer handles markdown rendering with Glamour
@@ -38,7 +39,7 @@ func (mr *MarkdownRenderer) RenderArticles(articles []news.Article, title string
 
 	// Build markdown content
 	var md strings.Builder
-	
+
 	// Header
 	md.WriteString(fmt.Sprintf("# 📰 %s\n\n", title))
 	md.WriteString(fmt.Sprintf("*Updated: %s*\n\n", time.Now().Format("Monday, January 2, 2006 at 15:04")))
@@ -49,20 +50,20 @@ func (mr *MarkdownRenderer) RenderArticles(articles []news.Article, title string
 		if i > 0 {
 			md.WriteString("\n---\n\n")
 		}
-		
+
 		// Article header with source and time
-		sourceInfo := fmt.Sprintf("**%s** • %s", 
-			article.Source, 
+		sourceInfo := fmt.Sprintf("**%s** • %s",
+			article.Source,
 			formatTimeAgo(article.Published))
-		
+
 		md.WriteString(fmt.Sprintf("## %s\n\n", article.Title))
 		md.WriteString(fmt.Sprintf("*%s*\n\n", sourceInfo))
-		
+
 		// Image if available
 		if article.ImageURL != "" {
 			md.WriteString(fmt.Sprintf("![Article Image](%s)\n\n", article.ImageURL))
 		}
-		
+
 		// Description/Content
 		if article.Description != "" {
 			md.WriteString(fmt.Sprintf("%s\n\n", article.Description))
@@ -74,7 +75,7 @@ func (mr *MarkdownRenderer) RenderArticles(articles []news.Article, title string
 			}
 			md.WriteString(fmt.Sprintf("%s\n\n", content))
 		}
-		
+
 		// Categories
 		if len(article.Categories) > 0 {
 			md.WriteString("**Categories:** ")
@@ -86,11 +87,11 @@ func (mr *MarkdownRenderer) RenderArticles(articles []news.Article, title string
 			}
 			md.WriteString("\n\n")
 		}
-		
+
 		// Read more link
 		md.WriteString(fmt.Sprintf("🔗 [Read full article](%s)\n\n", article.Link))
 	}
-	
+
 	// Footer
 	md.WriteString("---\n\n")
 	md.WriteString(fmt.Sprintf("*Found %d articles • Generated with NWCLI*\n", len(articles)))
@@ -102,17 +103,17 @@ func (mr *MarkdownRenderer) RenderArticles(articles []news.Article, title string
 // RenderSingleArticle renders a single article in detail
 func (mr *MarkdownRenderer) RenderSingleArticle(article news.Article) (string, error) {
 	var md strings.Builder
-	
+
 	// Title
 	md.WriteString(fmt.Sprintf("# %s\n\n", article.Title))
-	
+
 	// Metadata
 	md.WriteString(fmt.Sprintf("**Source:** %s\n", article.Source))
-	md.WriteString(fmt.Sprintf("**Published:** %s (%s)\n", 
+	md.WriteString(fmt.Sprintf("**Published:** %s (%s)\n",
 		article.Published.Format("Monday, January 2, 2006 at 15:04"),
 		formatTimeAgo(article.Published)))
 	md.WriteString(fmt.Sprintf("**URL:** %s\n\n", article.Link))
-	
+
 	// Categories
 	if len(article.Categories) > 0 {
 		md.WriteString("**Categories:** ")
@@ -124,14 +125,14 @@ func (mr *MarkdownRenderer) RenderSingleArticle(article news.Article) (string, e
 		}
 		md.WriteString("\n\n")
 	}
-	
+
 	md.WriteString("---\n\n")
-	
+
 	// Image
 	if article.ImageURL != "" {
 		md.WriteString(fmt.Sprintf("![Article Image](%s)\n\n", article.ImageURL))
 	}
-	
+
 	// Content
 	if article.Content != "" {
 		md.WriteString(fmt.Sprintf("%s\n\n", article.Content))
@@ -145,20 +146,20 @@ func (mr *MarkdownRenderer) RenderSingleArticle(article news.Article) (string, e
 // RenderSources renders available news sources
 func (mr *MarkdownRenderer) RenderSources(sources []news.Source) (string, error) {
 	var md strings.Builder
-	
+
 	md.WriteString("# 📰 Available News Sources\n\n")
 	md.WriteString("*Configure your preferred Dutch news sources*\n\n")
 	md.WriteString("---\n\n")
-	
+
 	// Group by category
 	categories := make(map[string][]news.Source)
 	for _, source := range sources {
 		categories[source.Category] = append(categories[source.Category], source)
 	}
-	
+
 	for category, sources := range categories {
 		md.WriteString(fmt.Sprintf("## %s\n\n", strings.Title(category)))
-		
+
 		for _, source := range sources {
 			md.WriteString(fmt.Sprintf("### %s\n", source.Name))
 			md.WriteString(fmt.Sprintf("*%s*\n\n", source.Description))
@@ -166,7 +167,7 @@ func (mr *MarkdownRenderer) RenderSources(sources []news.Source) (string, error)
 			md.WriteString(fmt.Sprintf("**Language:** %s\n\n", source.Language))
 		}
 	}
-	
+
 	md.WriteString("---\n\n")
 	md.WriteString("*Use filters to focus on specific sources or categories*\n")
 
@@ -186,31 +187,31 @@ func (mr *MarkdownRenderer) RenderStats(articles []news.Article) (string, error)
 	}
 
 	var md strings.Builder
-	
+
 	md.WriteString("# 📊 News Statistics\n\n")
 	md.WriteString("---\n\n")
-	
+
 	// Total articles
 	md.WriteString(fmt.Sprintf("**Total Articles:** %d\n\n", len(articles)))
-	
+
 	// Sources breakdown
 	sourceCount := make(map[string]int)
 	categoryCount := make(map[string]int)
-	
+
 	for _, article := range articles {
 		sourceCount[article.Source]++
 		for _, cat := range article.Categories {
 			categoryCount[cat]++
 		}
 	}
-	
+
 	// Top sources
 	md.WriteString("## Sources\n\n")
 	for source, count := range sourceCount {
 		md.WriteString(fmt.Sprintf("- **%s**: %d articles\n", source, count))
 	}
 	md.WriteString("\n")
-	
+
 	// Categories
 	if len(categoryCount) > 0 {
 		md.WriteString("## Categories\n\n")
@@ -219,12 +220,12 @@ func (mr *MarkdownRenderer) RenderStats(articles []news.Article) (string, error)
 		}
 		md.WriteString("\n")
 	}
-	
+
 	// Time range
 	if len(articles) > 0 {
 		oldest := articles[0].Published
 		newest := articles[0].Published
-		
+
 		for _, article := range articles {
 			if article.Published.Before(oldest) {
 				oldest = article.Published
@@ -233,7 +234,7 @@ func (mr *MarkdownRenderer) RenderStats(articles []news.Article) (string, error)
 				newest = article.Published
 			}
 		}
-		
+
 		md.WriteString("## Time Range\n\n")
 		md.WriteString(fmt.Sprintf("- **Newest**: %s\n", newest.Format("January 2, 2006 at 15:04")))
 		md.WriteString(fmt.Sprintf("- **Oldest**: %s\n", oldest.Format("January 2, 2006 at 15:04")))

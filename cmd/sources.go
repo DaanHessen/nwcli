@@ -4,9 +4,10 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/spf13/cobra"
 	"nwcli/pkg/news"
 	"nwcli/pkg/renderer"
+
+	"github.com/spf13/cobra"
 )
 
 var sourcesCmd = &cobra.Command{
@@ -53,7 +54,7 @@ Use this information to filter news by specific sources using the
 
 func init() {
 	rootCmd.AddCommand(sourcesCmd)
-	
+
 	// Flags
 	sourcesCmd.Flags().StringP("country", "", "nl", "country code (nl, us, uk, de, fr)")
 }
@@ -88,7 +89,7 @@ func renderSourcesPlain(sources []news.Source) error {
 			countryName = "French News Sources"
 		}
 	}
-	
+
 	fmt.Printf("Available %s:\n", countryName)
 	fmt.Println(strings.Repeat("=", len(countryName)+11))
 
@@ -101,7 +102,7 @@ func renderSourcesPlain(sources []news.Source) error {
 	for category, sources := range categories {
 		fmt.Printf("\n%s:\n", category)
 		fmt.Println(strings.Repeat("-", len(category)+1))
-		
+
 		for _, source := range sources {
 			fmt.Printf("• %s\n", source.Name)
 			fmt.Printf("  %s\n", source.Description)

@@ -5,8 +5,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/spf13/cobra"
 	"nwcli/pkg/news"
+
+	"github.com/spf13/cobra"
 )
 
 var digestCmd = &cobra.Command{
@@ -29,6 +30,7 @@ Perfect for your morning news routine!`,
 		categories, _ := cmd.Flags().GetStringSlice("categories")
 		country, _ := cmd.Flags().GetString("country")
 		fullContent, _ := cmd.Flags().GetBool("full")
+		noPager, _ := cmd.Flags().GetBool("no-pager")
 
 		if verbose {
 			fmt.Printf("📰 Preparing your daily %s news digest", country)
@@ -40,12 +42,12 @@ Perfect for your morning news routine!`,
 
 		// Create news service with options
 		newsService := news.NewNewsServiceWithOptions(country, fullContent)
-		
+
 		// Get today's articles
 		today := time.Now().Truncate(24 * time.Hour)
-		
+
 		var allArticles []news.Article
-		
+
 		if len(categories) > 0 {
 			// Fetch articles for specific categories
 			for _, category := range categories {
@@ -88,13 +90,13 @@ Perfect for your morning news routine!`,
 		case "plain":
 			return renderPlain(digestArticles)
 		default: // markdown
-			title := fmt.Sprintf("📰 Daily News Digest (%s) - %s", 
+			title := fmt.Sprintf("📰 Daily News Digest (%s) - %s",
 				strings.ToUpper(country),
 				time.Now().Format("Monday, January 2, 2006"))
 			if fullContent {
 				title += " - Full Articles"
 			}
-			return renderMarkdown(digestArticles, title)
+			return renderMarkdownWithPager(digestArticles, title, noPager)
 		}
 	},
 }
@@ -107,6 +109,7 @@ func init() {
 	digestCmd.Flags().StringSliceP("categories", "c", []string{}, "categories to include (general, sports, tech)")
 	digestCmd.Flags().StringP("country", "", "nl", "country code (nl, us, uk, de, fr)")
 	digestCmd.Flags().BoolP("full", "", false, "include full article content instead of summaries")
+	digestCmd.Flags().BoolP("no-pager", "", false, "disable interactive pager and output to stdout")
 }
 
 // organizeDigestArticles organizes articles for a balanced digest
@@ -118,14 +121,14 @@ func organizeDigestArticles(articles []news.Article, limit int) []news.Article {
 	// Group by category and source for variety
 	categoryGroups := make(map[string][]news.Article)
 	sourceCount := make(map[string]int)
-	
+
 	for _, article := range articles {
 		// Categorize articles
 		category := "general"
 		if len(article.Categories) > 0 {
 			category = article.Categories[0]
 		}
-		
+
 		categoryGroups[category] = append(categoryGroups[category], article)
 		sourceCount[article.Source]++
 	}
@@ -140,12 +143,12 @@ func organizeDigestArticles(articles []news.Article, limit int) []news.Article {
 	for _, articles := range categoryGroups {
 		count := 0
 		sourceUsed := make(map[string]int)
-		
+
 		for _, article := range articles {
 			if count >= maxPerCategory {
 				break
 			}
-			
+
 			// Prefer variety in sources
 			if sourceUsed[article.Source] < 2 {
 				selected = append(selected, article)
@@ -153,7 +156,7 @@ func organizeDigestArticles(articles []news.Article, limit int) []news.Article {
 				count++
 			}
 		}
-		
+
 		if len(selected) >= limit {
 			break
 		}
@@ -165,7 +168,7 @@ func organizeDigestArticles(articles []news.Article, limit int) []news.Article {
 		for _, article := range selected {
 			used[article.Link] = true
 		}
-		
+
 		for _, article := range articles {
 			if len(selected) >= limit {
 				break
