@@ -16,7 +16,7 @@ func LaunchTUI(articles []news.Article, title string) error {
 		return fmt.Errorf("failed to create TUI model: %w", err)
 	}
 
-	p := tea.NewProgram(model, tea.WithAltScreen())
+	p := tea.NewProgram(model, tea.WithAltScreen(), tea.WithMouseCellMotion())
 	_, err = p.Run()
 	return err
 }

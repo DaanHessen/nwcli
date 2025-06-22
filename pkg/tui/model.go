@@ -50,10 +50,16 @@ func NewModel(articles []news.Article, title string) (*Model, error) {
 		return nil, fmt.Errorf("failed to create renderer: %w", err)
 	}
 
+	// Ensure we have at least one article to select
+	selectedIndex := 0
+	if len(articles) == 0 {
+		selectedIndex = -1 // No articles to select
+	}
+
 	return &Model{
 		articles:      articles,
 		currentView:   IndexView,
-		selectedIndex: 0,
+		selectedIndex: selectedIndex,
 		title:         title,
 		renderer:      renderer,
 		showHelp:      false,
@@ -75,6 +81,42 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.windowHeight = msg.Height
 		m.viewport.height = msg.Height - 4 // Leave space for header/footer
 
+	case tea.MouseMsg:
+		switch msg.Action {
+		case tea.MouseActionPress:
+			if msg.Button == tea.MouseButtonWheelUp {
+				if m.currentView == IndexView {
+					if m.selectedIndex > 0 {
+						m.selectedIndex--
+					}
+				} else {
+					m.scrollUp()
+				}
+			} else if msg.Button == tea.MouseButtonWheelDown {
+				if m.currentView == IndexView {
+					if m.selectedIndex < len(m.articles)-1 {
+						m.selectedIndex++
+					}
+				} else {
+					m.scrollDown()
+				}
+			} else if msg.Button == tea.MouseButtonLeft {
+				if m.currentView == IndexView && len(m.articles) > 0 {
+					// Calculate which article was clicked based on mouse position
+					// Each article takes about 6 lines with new styling
+					headerHeight := 6 // Approximate header height
+					if msg.Y >= headerHeight {
+						clickedIndex := (msg.Y - headerHeight) / 6
+						if clickedIndex >= 0 && clickedIndex < len(m.articles) {
+							m.selectedIndex = clickedIndex
+							m.currentView = ArticleView
+							m.updateViewport()
+						}
+					}
+				}
+			}
+		}
+
 	case tea.KeyMsg:
 		switch msg.String() {
 		case "q", "ctrl+c":
@@ -90,7 +132,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 
 		case "enter":
-			if m.currentView == IndexView && len(m.articles) > 0 {
+			if m.currentView == IndexView && len(m.articles) > 0 && m.selectedIndex >= 0 {
 				m.currentView = ArticleView
 				m.updateViewport()
 			}
@@ -163,65 +205,140 @@ func (m Model) View() string {
 func (m Model) renderIndex() string {
 	var b strings.Builder
 
-	// Header
+	// Header with enhanced styling
 	headerStyle := lipgloss.NewStyle().
 		Bold(true).
-		Foreground(lipgloss.Color("39")).
-		BorderStyle(lipgloss.NormalBorder()).
-		BorderBottom(true).
-		Width(m.windowWidth)
+		Foreground(lipgloss.Color("#FFFFFF")).
+		Background(lipgloss.Color("#5F87D7")).
+		Padding(1, 2).
+		BorderStyle(lipgloss.RoundedBorder()).
+		Width(m.windowWidth - 4).
+		Align(lipgloss.Center)
 
-	header := fmt.Sprintf("📰 %s\n%s\n%d articles • Use ↑/↓ to navigate, Enter to read, q to quit",
-		m.title,
+	header := fmt.Sprintf("📰 %s", m.title)
+	subHeader := fmt.Sprintf("%s • %d articles available",
 		time.Now().Format("Monday, January 2, 2006 at 15:04"),
 		len(m.articles))
 
 	b.WriteString(headerStyle.Render(header))
+	b.WriteString("\n")
+	
+	// Sub-header
+	subHeaderStyle := lipgloss.NewStyle().
+		Foreground(lipgloss.Color("#8888AA")).
+		Align(lipgloss.Center).
+		Width(m.windowWidth).
+		MarginBottom(1)
+	
+	b.WriteString(subHeaderStyle.Render(subHeader))
 	b.WriteString("\n\n")
 
-	// Article list
-	for i, article := range m.articles {
-		style := lipgloss.NewStyle().
-			PaddingLeft(2)
-
-		if i == m.selectedIndex {
-			style = style.
-				Bold(true).
-				Foreground(lipgloss.Color("205")).
-				Background(lipgloss.Color("235"))
-		}
-
-		// Article item
-		sourceTime := fmt.Sprintf("[%s] %s",
-			article.Source,
-			formatTimeAgo(article.Published))
-
-		item := fmt.Sprintf("• %s\n  %s",
-			article.Title,
-			sourceTime)
-
-		if article.Description != "" && len(article.Description) > 0 {
-			desc := article.Description
-			if len(desc) > 100 {
-				desc = desc[:97] + "..."
-			}
-			item += fmt.Sprintf("\n  %s", desc)
-		}
-
-		b.WriteString(style.Render(item))
-		b.WriteString("\n\n")
+	// Check if we have articles to display
+	if len(m.articles) == 0 {
+		emptyStyle := lipgloss.NewStyle().
+			Foreground(lipgloss.Color("#888888")).
+			Align(lipgloss.Center).
+			Width(m.windowWidth).
+			Padding(2)
+		
+		b.WriteString(emptyStyle.Render("📭 No articles found\n\nPress 'q' to quit"))
+		return b.String()
 	}
 
-	// Footer
-	footerStyle := lipgloss.NewStyle().
-		Foreground(lipgloss.Color("241")).
-		BorderStyle(lipgloss.NormalBorder()).
-		BorderTop(true).
-		Width(m.windowWidth)
+	// Article list with enhanced styling
+	for i, article := range m.articles {
+		isSelected := i == m.selectedIndex
+		
+		// Base article container
+		containerStyle := lipgloss.NewStyle().
+			Width(m.windowWidth - 4).
+			MarginBottom(1).
+			Padding(1).
+			BorderStyle(lipgloss.RoundedBorder())
 
-	footer := "Press 'h' for help • 'q' to quit • Enter to read article"
+		if isSelected {
+			containerStyle = containerStyle.
+				BorderForeground(lipgloss.Color("#FF6B9D")).
+				Background(lipgloss.Color("#2D1B4E")).
+				Bold(true)
+		} else {
+			containerStyle = containerStyle.
+				BorderForeground(lipgloss.Color("#3C3C3C")).
+				Background(lipgloss.Color("#1A1A1A"))
+		}
+
+		// Title styling
+		titleStyle := lipgloss.NewStyle().
+			Foreground(lipgloss.Color("#FFFFFF")).
+			Bold(true)
+		
+		if isSelected {
+			titleStyle = titleStyle.Foreground(lipgloss.Color("#FFB6D9"))
+		}
+
+		// Source and time styling
+		metaStyle := lipgloss.NewStyle().
+			Foreground(lipgloss.Color("#888888")).
+			Italic(true).
+			MarginTop(1)
+		
+		if isSelected {
+			metaStyle = metaStyle.Foreground(lipgloss.Color("#BBBBBB"))
+		}
+
+		// Description styling  
+		descStyle := lipgloss.NewStyle().
+			Foreground(lipgloss.Color("#CCCCCC")).
+			MarginTop(1)
+		
+		if isSelected {
+			descStyle = descStyle.Foreground(lipgloss.Color("#EEEEEE"))
+		}
+
+		// Build article content
+		var articleContent strings.Builder
+		
+		// Selection indicator
+		indicator := "  "
+		if isSelected {
+			indicator = "▶ "
+		}
+		
+		articleContent.WriteString(indicator + titleStyle.Render(article.Title))
+		
+		// Source and time
+		sourceTime := fmt.Sprintf("📡 %s • 🕒 %s",
+			article.Source,
+			formatTimeAgo(article.Published))
+		articleContent.WriteString("\n" + metaStyle.Render(sourceTime))
+
+		// Description
+		if article.Description != "" {
+			desc := article.Description
+			if len(desc) > 120 {
+				desc = desc[:117] + "..."
+			}
+			articleContent.WriteString("\n" + descStyle.Render("💬 " + desc))
+		}
+
+		b.WriteString(containerStyle.Render(articleContent.String()))
+		b.WriteString("\n")
+	}
+
+	// Enhanced footer
+	footerStyle := lipgloss.NewStyle().
+		Foreground(lipgloss.Color("#888888")).
+		Background(lipgloss.Color("#1A1A1A")).
+		Padding(1).
+		BorderStyle(lipgloss.RoundedBorder()).
+		BorderForeground(lipgloss.Color("#3C3C3C")).
+		Width(m.windowWidth - 4).
+		Align(lipgloss.Center).
+		MarginTop(1)
+
+	footer := "🖱️  Mouse & scroll wheel supported • ⏎ Enter to read • ↑/↓ or j/k to navigate • g/G first/last • h help • q quit"
 	if m.showHelp {
-		footer = "Navigation: ↑/↓ or j/k • Enter: read article • g/G: first/last • q: quit • h: toggle help"
+		footer = "📖 Navigation: ↑/↓ or j/k or mouse wheel • ⏎ Enter: read article • 🖱️ Click: select & read • g/G: first/last • ESC: back • q: quit • h: toggle help"
 	}
 
 	b.WriteString(footerStyle.Render(footer))
@@ -261,7 +378,9 @@ func (m Model) renderArticle() string {
 	md.WriteString("---\n\n")
 
 	if article.ImageURL != "" {
-		md.WriteString(fmt.Sprintf("![Article Image](%s)\n\n", article.ImageURL))
+		// Use terminal image support if available
+		imagePlaceholder := GetImagePlaceholder(article.ImageURL)
+		md.WriteString(imagePlaceholder)
 	}
 
 	if article.Content != "" {
@@ -287,7 +406,7 @@ func (m Model) renderScrollableContent() string {
 	lines := strings.Split(m.viewport.content, "\n")
 
 	start := m.viewport.scrollOffset
-	end := start + m.viewport.height - 2 // Leave space for header
+	end := start + m.viewport.height - 3 // Leave space for header and footer
 
 	if start < 0 {
 		start = 0
@@ -307,39 +426,46 @@ func (m Model) renderScrollableContent() string {
 		visible = lines[start:end]
 	}
 
-	// Header
+	// Enhanced header
 	headerStyle := lipgloss.NewStyle().
 		Bold(true).
-		Foreground(lipgloss.Color("39")).
-		BorderStyle(lipgloss.NormalBorder()).
-		BorderBottom(true).
-		Width(m.windowWidth)
+		Foreground(lipgloss.Color("#FFFFFF")).
+		Background(lipgloss.Color("#5F87D7")).
+		Padding(0, 2).
+		BorderStyle(lipgloss.RoundedBorder()).
+		Width(m.windowWidth - 4).
+		Align(lipgloss.Center)
 
-	header := fmt.Sprintf("Article %d of %d • ESC: back to index • ↑/↓: scroll • q: quit",
-		m.selectedIndex+1, len(m.articles))
+	article := m.articles[m.selectedIndex]
+	header := fmt.Sprintf("📖 Article %d of %d • %s",
+		m.selectedIndex+1, len(m.articles), article.Source)
 
-	// Footer with scroll indicator
-	footerStyle := lipgloss.NewStyle().
-		Foreground(lipgloss.Color("241")).
-		BorderStyle(lipgloss.NormalBorder()).
-		BorderTop(true).
-		Width(m.windowWidth)
-
+	// Calculate scroll percentage
 	scrollPercent := 0
 	if len(lines) > m.viewport.height {
 		scrollPercent = int(float64(start) / float64(len(lines)-m.viewport.height) * 100)
 	}
 
-	footer := fmt.Sprintf("Scroll: %d%% • h: help", scrollPercent)
+	// Enhanced footer with scroll indicator
+	footerStyle := lipgloss.NewStyle().
+		Foreground(lipgloss.Color("#888888")).
+		Background(lipgloss.Color("#1A1A1A")).
+		Padding(0, 2).
+		BorderStyle(lipgloss.RoundedBorder()).
+		BorderForeground(lipgloss.Color("#3C3C3C")).
+		Width(m.windowWidth - 4).
+		Align(lipgloss.Center)
+
+	footer := fmt.Sprintf("📊 %d%% • 🖱️ Mouse wheel supported • ⬅ ESC back • ↑/↓ scroll • h help", scrollPercent)
 	if m.showHelp {
-		footer = "Navigation: ↑/↓ or j/k • PgUp/PgDn: page • g/G: top/bottom • ESC: back • q: quit"
+		footer = "🖱️ Mouse wheel or ↑/↓ j/k: scroll • PgUp/PgDn: page • g/G: top/bottom • ⬅ ESC: back to index • q: quit • h: toggle help"
 	}
 
 	var b strings.Builder
 	b.WriteString(headerStyle.Render(header))
-	b.WriteString("\n")
+	b.WriteString("\n\n")
 	b.WriteString(strings.Join(visible, "\n"))
-	b.WriteString("\n")
+	b.WriteString("\n\n")
 	b.WriteString(footerStyle.Render(footer))
 
 	return b.String()
@@ -360,7 +486,9 @@ func (m Model) renderEmpty() string {
 func (m *Model) updateViewport() {
 	if m.currentView == ArticleView {
 		// Content will be generated in renderArticle
+		// Always start at the top when entering article view
 		m.viewport.scrollOffset = 0
+		m.viewport.height = m.windowHeight - 4 // Account for header/footer
 	}
 }
 
